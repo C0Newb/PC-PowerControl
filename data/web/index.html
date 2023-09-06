@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PC-PowerControl</title>
+    <style>
+        /* Add some basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="/logout">Logout</a>
+    <h1>PC-PowerControl</h1>
+    <div id="status"></div>
+
+    <button onclick="confirmAndSend('power')">Power Button</button>
+    <button onclick="confirmAndSend('power_long')">Power Button (long press)</button>
+    <button onclick="confirmAndSend('reset')">Reset Button</button>
+
+    <script>
+        // Function to update status
+        function updateStatus() {
+            var statusDiv = document.getElementById("status");
+
+            // Create a new XMLHttpRequest object
+            var xhr = new XMLHttpRequest();
+
+            // Define the endpoint URL
+            var url = "/api/status";
+
+            // Configure the request
+            xhr.open("GET", url, true);
+
+            // Set up event handler when the request is complete
+            xhr.onload = function () {
+                if (xhr.status === 401) {
+                    window.location.href = "/login";
+                }
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    // Parse the JSON response
+                    var responseData = JSON.parse(xhr.responseText);
+
+                    // Clear existing content
+                    statusDiv.innerHTML = '';
+
+                    // Loop through properties and add <p> elements
+                    for (var category in responseData) {
+                        var categoryData = responseData[category];
+                        var categoryTitle = document.createElement("p");
+                        categoryTitle.textContent = category;
+                        categoryTitle.style.fontWeight = "bold";
+                        statusDiv.appendChild(categoryTitle);
+
+                        for (var property in categoryData) {
+                            var propertyElement = document.createElement("p");
+                            propertyElement.innerHTML = `${property}: ${categoryData[property]}`;
+                            statusDiv.appendChild(propertyElement);
+                        }
+                    }
+                }
+            };
+
+            // Send the request
+            xhr.send();
+        }
+
+        // Function to confirm and send button press
+        function confirmAndSend(buttonName) {
+            if (confirm(`Are you sure you want to press the "${buttonName}" button?`)) {
+                var xhr = new XMLHttpRequest();
+                var url = `/api/press/${buttonName}`;
+                xhr.open("POST", url, true);
+                xhr.onload = function () {
+                    if (xhr.status === 401) {
+                        // Redirect to login page if unauthorized
+                        window.location.href = "/login";
+                    } else {
+                        // Update the status after the button press
+                        updateStatus();
+                    }
+                };
+                xhr.send();
+            }
+        }
+
+        // Update status every 250ms
+        setInterval(updateStatus, 250);
+    </script>
+</body>
+
+</html>
